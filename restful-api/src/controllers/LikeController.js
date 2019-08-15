@@ -5,6 +5,8 @@ module.exports = {
     const { user } = req.headers;
     const { devId } = req.params;
 
+    const { io, connectedUsers } = req;
+
     const loggedDev = await Dev.findById(user);
     const targetDev = await Dev.findById(devId);
 
@@ -13,7 +15,16 @@ module.exports = {
     }
 
     if (targetDev.likes.includes(loggedDev._id)) {
-      console.log("It's a match!");
+      const loggedSocket = connectedUsers[user];
+      const targetSocket = connectedUsers[devId];
+
+      if (loggedSocket) {
+        io.to(loggedSocket).emit("match", targetDev);
+      }
+
+      if (targetSocket) {
+        io.to(targetSocket).emit("match", loggedDev);
+      }
     }
 
     loggedDev.likes.push(targetDev._id);
